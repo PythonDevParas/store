@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PTG Store</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <style>
+    .screenshot-scroll::-webkit-scrollbar { height: 6px; }
+    .screenshot-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
+    .screenshot-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Store Branding -->
+      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="navigateToCatalog()">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md">
+          <span class="material-symbols-outlined text-2xl">storefront</span>
+        </div>
+        <span class="text-xl font-bold tracking-tight text-gray-900">PTG Store</span>
+      </div>
+
+      <!-- Live Search Bar -->
+      <div id="navSearchBar" class="flex-1 max-w-xl mx-4">
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search applications, utilities, launchers..." 
+            oninput="handleSearch()"
+            class="w-full bg-gray-100 pl-10 pr-4 py-2 rounded-full border border-transparent focus:border-teal-500 focus:bg-white focus:outline-none transition-all text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Quick Counter -->
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <span id="appCountBadge" class="hidden sm:inline-block px-3 py-1 rounded-full bg-gray-100 font-medium">13 Apps Available</span>
+      </div>
+    </div>
+
+    <!-- Category Selector -->
+    <div id="categoryBar" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex gap-2">
+      <button onclick="filterCategory('All')" class="category-btn active px-4 py-1.5 rounded-full text-xs font-semibold bg-teal-600 text-white transition-colors">All Apps</button>
+      <button onclick="filterCategory('AI & Tools')" class="category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">AI & Tools</button>
+      <button onclick="filterCategory('Productivity')" class="category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Productivity</button>
+      <button onclick="filterCategory('Development')" class="category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Development</button>
+      <button onclick="filterCategory('Security & Media')" class="category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Security & Media</button>
+      <button onclick="filterCategory('Launchers')" class="category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">Gaming & Launchers</button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    
+    <!-- 1. Catalog / Front Store View -->
+    <section id="catalogView">
+      <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+
+      <!-- No Results State -->
+      <div id="noResults" class="hidden text-center py-20">
+        <span class="material-symbols-outlined text-6xl text-gray-300 mb-3">search_off</span>
+        <h3 class="text-lg font-semibold text-gray-700">No applications found</h3>
+        <p class="text-sm text-gray-500 mt-1">Try searching for other software or browse all categories.</p>
+      </div>
+    </section>
+
+    <!-- 2. Individual App Installation Page -->
+    <section id="installPageView" class="hidden max-w-4xl mx-auto">
+      
+      <!-- Back Navigation Button -->
+      <button onclick="navigateToCatalog()" class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-teal-600 transition mb-6">
+        <span class="material-symbols-outlined text-lg">arrow_back</span>
+        <span>Back to Store</span>
+      </button>
+
+      <!-- App Details Box -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div class="flex items-center gap-5">
+            <div id="detailIcon" class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-white text-4xl shadow-md"></div>
+            <div>
+              <h1 id="detailTitle" class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight"></h1>
+              <p id="detailCategory" class="text-sm font-semibold text-teal-600 mt-1 uppercase tracking-wider"></p>
+              <p class="text-xs text-gray-400 mt-0.5">Verified executable package (.exe)</p>
+            </div>
+          </div>
+
+          <!-- Direct Download Link -->
+          <div class="w-full sm:w-auto flex flex-col gap-2">
+            <a 
+              id="detailInstallBtn" 
+              href="#" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="w-full sm:w-48 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-2xl text-center flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition active:scale-95"
+            >
+              <span class="material-symbols-outlined text-xl">download</span>
+              <span>Install App</span>
+            </a>
+            <span class="text-[11px] text-center text-gray-400">Direct Setup Package</span>
+          </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="grid grid-cols-3 divide-x divide-gray-100 border-t border-gray-100 mt-8 pt-6 text-center">
+          <div>
+            <div class="flex items-center justify-center gap-1 font-bold text-gray-900 text-base sm:text-lg">
+              <span id="detailRating">4.8</span>
+              <span class="material-symbols-outlined text-amber-500 text-sm">star</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-0.5">Community Rating</p>
+          </div>
+          <div>
+            <div id="detailSize" class="font-bold text-gray-900 text-base sm:text-lg">~45 MB</div>
+            <p class="text-xs text-gray-400 mt-0.5">Package Size</p>
+          </div>
+          <div>
+            <div class="font-bold text-gray-900 text-base sm:text-lg">Windows 10/11</div>
+            <p class="text-xs text-gray-400 mt-0.5">Architecture</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Interface Screenshots -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm mb-6">
+        <h2 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-teal-600">imagesmode</span>
+          Preview Screenshots
+        </h2>
+        <div id="detailScreenshots" class="flex gap-4 overflow-x-auto pb-3 screenshot-scroll"></div>
+      </div>
+
+      <!-- App Overview & Details -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm mb-6 space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-gray-900 mb-2">About this application</h2>
+          <p id="detailDescription" class="text-gray-600 text-sm sm:text-base leading-relaxed"></p>
+        </div>
+
+        <div class="border-t border-gray-100 pt-5">
+          <h3 class="text-sm font-bold text-gray-900 mb-3">Key Features</h3>
+          <ul id="detailFeatures" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm text-gray-600"></ul>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    const apps = [
+      {
+        id: 1,
+        slug: "tiny-player",
+        name: "Tiny Player",
+        category: "Security & Media",
+        icon: "play_circle",
+        color: "from-red-500 to-rose-400",
+        rating: "4.8",
+        size: "34 MB",
+        description: "Tiny Player is an ultra-fast, lightweight desktop media engine engineered for low CPU footprint and stutter-free playback across all audio and video formats.",
+        features: ["Low RAM and battery consumption", "Supports MKV, MP4, FLAC, and WAV", "Built-in minimal equalizer", "Instant hotkey navigation"],
+        url: "https://www.mediafire.com/file/77zrblb6atru1pu/Tiny+Player+installer.exe/file"
+      },
+      {
+        id: 2,
+        slug: "paras-box-cloud",
+        name: "Paras box cloud",
+        category: "Productivity",
+        icon: "cloud",
+        color: "from-blue-500 to-cyan-400",
+        rating: "4.7",
+        size: "52 MB",
+        description: "Paras box cloud is a direct desktop file sync client that facilitates remote backups, local workspace directory synchronization, and safe document transfers.",
+        features: ["Selective folder synchronization", "End-to-end encrypted backup transfers", "One-click shareable file links", "Automatic background uploads"],
+        url: "https://www.mediafire.com/file/fn2saorvc4cmbys/parasboxcloud.exe/file"
+      },
+      {
+        id: 3,
+        slug: "ai-notepad",
+        name: "AI-notepad",
+        category: "AI & Tools",
+        icon: "edit_note",
+        color: "from-indigo-500 to-purple-400",
+        rating: "4.9",
+        size: "68 MB",
+        description: "AI-notepad couples a distraction-free text writing interface with on-device generative text assistance, grammar correction, and structural outlining[cite: 1].",
+        features: ["Inline prompt suggestions & rewriting", "Markdown syntax export", "Offline note caching", "Intelligent auto-tagging"],
+        url: "https://www.mediafire.com/file/tm2632vftazjezs/AI-notepad+installer.exe/file"
+      },
+      {
+        id: 4,
+        slug: "find-ai-browser",
+        name: "Find AI Browser",
+        category: "AI & Tools",
+        icon: "travel_explore",
+        color: "from-sky-500 to-blue-400",
+        rating: "4.6",
+        size: "82 MB",
+        description: "Find AI Browser is a next-generation desktop navigator with embedded AI research tools, live web distillation, and streamlined tab managers[cite: 1].",
+        features: ["Instant page summaries", "Integrated privacy shields & tracker blocks", "Natural language web search", "Low memory background tab freezing"],
+        url: "https://www.mediafire.com/file/rga7ikn0tgx4549/Find-AI-Browser.exe/file"
+      },
+      {
+        id: 5,
+        slug: "p-note",
+        name: "P-note",
+        category: "Productivity",
+        icon: "sticky_note_2",
+        color: "from-amber-500 to-yellow-400",
+        rating: "4.5",
+        size: "28 MB",
+        description: "P-note delivers a lightweight desktop sticky pad for tracking instant to-dos, pinning critical code snippets, and saving brainstormed ideas directly on screen[cite: 1].",
+        features: ["Always-on-top desktop stickies", "Checklists and strikethrough options", "Color-coded organizational boards", "Instant global hotkey summons"],
+        url: "https://www.dropbox.com/scl/fi/ba0o7fwnt10b0gpa1bsxt/P-note-Set-up.exe?rlkey=9zgxjnnskv0e8ojm2uta8qy25&st=fbpqbong&e=1&dl=0"
+      },
+      {
+        id: 6,
+        slug: "codenano",
+        name: "CodeNano",
+        category: "Development",
+        icon: "terminal",
+        color: "from-slate-700 to-gray-600",
+        rating: "4.9",
+        size: "44 MB",
+        description: "CodeNano is an agile source editor built for developers demanding instantaneous startup times, minimal memory usage, and robust syntax highlight trees[cite: 1].",
+        features: ["Sub-second cold startup", "Multi-caret editing & syntax themes", "Integrated terminal window", "Git diff line status"],
+        url: "https://www.mediafire.com/file/0nryg74ru5w17vo/CodeNano+installer.exe/file"
+      },
+      {
+        id: 7,
+        slug: "hunter-antivirus",
+        name: "Hunter Antivirus",
+        category: "Security & Media",
+        icon: "security",
+        color: "from-emerald-600 to-teal-500",
+        rating: "4.8",
+        size: "76 MB",
+        description: "Hunter Antivirus provides heuristic file shields, background malware quarantine routines, and continuous protection for Windows filesystems[cite: 1].",
+        features: ["Real-time execution protection", "On-demand system scanning engine", "Zero intrusive ad popups", "Quarantine vault for suspicious scripts"],
+        url: "https://www.mediafire.com/file/8wc240h40ame5ow/Hunter+Installer.exe/file"
+      },
+      {
+        id: 8,
+        slug: "aura-nexus",
+        name: "Aura Nexus",
+        category: "Productivity",
+        icon: "hub",
+        color: "from-purple-600 to-indigo-500",
+        rating: "4.6",
+        size: "58 MB",
+        description: "Aura Nexus centralizes toolkits, workflow docks, and system launchers into one clean command hub tailored for productivity setups[cite: 1].",
+        features: ["Custom macro triggers", "Workspace layout presets", "Widget-based system monitor", "Quick application jumping"],
+        url: "https://www.mediafire.com/file/vuk7aq71ww2112v/Aura+Nexus+Installer.exe/file"
+      },
+      {
+        id: 9,
+        slug: "minecraft-launcher",
+        name: "Minecraft Launcher",
+        category: "Launchers",
+        icon: "videogame_asset",
+        color: "from-green-600 to-emerald-500",
+        rating: "5.0",
+        size: "95 MB",
+        description: "Dedicated loader engineered for managing Minecraft version profiles, modloaders, client builds, and user authentication seamlessly[cite: 1].",
+        features: ["One-click Forge/Fabric modpack support", "Custom JVM memory allocators", "Separate environment profiles", "Fast skin and credential switcher"],
+        url: "https://www.mediafire.com/file/xtojejodnao2m49/Minecraft+Launcher+Installer.exe/file"
+      },
+      {
+        id: 10,
+        slug: "alpha-launcher",
+        name: "Alpha Launcher",
+        category: "Launchers",
+        icon: "rocket_launch",
+        color: "from-orange-500 to-amber-500",
+        rating: "4.7",
+        size: "62 MB",
+        description: "Alpha Launcher provides a high-efficiency game and desktop client bootloader focused on minimal overhead and instant application startup[cite: 1].",
+        features: ["Game library aggregator", "FPS and overlay optimizations", "Automatic patch and update runner", "Clean controller-friendly UI"],
+        url: "https://www.mediafire.com/file/cw82vtct8xblpf1/Alpha+Launcher+installer.exe/file"
+      },
+      {
+        id: 11,
+        slug: "titan-sir",
+        name: "Titan Sir",
+        category: "Productivity",
+        icon: "psychology",
+        color: "from-cyan-600 to-teal-400",
+        rating: "4.7",
+        size: "50 MB",
+        description: "Titan Sir functions as an interactive desktop tutor and study companion designed to outline research topics and guide step-by-step reasoning[cite: 1].",
+        features: ["Interactive topic flashcards", "Socratic problem explanation modes", "Structured study session timers", "Reference library builder"],
+        url: "https://www.mediafire.com/file/k8jtqr8qpo2it76/TitanSir.exe/file"
+      },
+      {
+        id: 12,
+        slug: "titan-coder",
+        name: "Titan Coder",
+        category: "Development",
+        icon: "code",
+        color: "from-violet-600 to-indigo-600",
+        rating: "4.9",
+        size: "70 MB",
+        description: "Titan Coder is an AI-accelerated pair programmer utility that explains errors, suggests optimizations, and generates boilerplate code on demand[cite: 1].",
+        features: ["Error trace analyzer", "Code refactoring engine", "Multi-language boilerplate generator", "Local context memory"],
+        url: "https://www.mediafire.com/file/bkjoa803qub54m6/Titancoder.exe/file"
+      },
+      {
+        id: 13,
+        slug: "cognix-ai",
+        name: "Cognix AI",
+        category: "AI & Tools",
+        icon: "smart_toy",
+        color: "from-pink-500 to-rose-500",
+        rating: "4.8",
+        size: "88 MB",
+        description: "Cognix AI is a desktop multi-model productivity assistant featuring document synthesis, code drafting, and automated pipeline execution[cite: 1].",
+        features: ["Batch document analysis", "Natural language query runner", "Custom prompt presets", "Secure offline conversation memory"],
+        url: "https://www.mediafire.com/file/pf9poodu34q31ms/CognixAI.exe/file"
+      }
+    ];
+
+    let currentCategory = 'All';
+    let searchQuery = '';
+
+    // Render Store Front
+    function renderApps() {
+      const grid = document.getElementById('appsGrid');
+      const noResults = document.getElementById('noResults');
+
+      const filtered = apps.filter(app => {
+        const matchesCategory = currentCategory === 'All' || app.category === currentCategory;
+        const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              app.description.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+
+      document.getElementById('appCountBadge').innerText = `${filtered.length} Applications Available`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        noResults.classList.remove('hidden');
+        return;
+      }
+
+      noResults.classList.add('hidden');
+      grid.innerHTML = filtered.map(app => `
+        <div 
+          onclick="navigateToApp('${app.slug}')"
+          class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group cursor-pointer hover:-translate-y-0.5"
+        >
+          <div>
+            <div class="flex items-center gap-3">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr ${app.color} flex items-center justify-center text-white shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-2xl">${app.icon}</span>
+              </div>
+              <div class="overflow-hidden">
+                <h4 class="font-bold text-gray-900 truncate text-base">${app.name}</h4>
+                <p class="text-xs text-gray-400 font-medium">${app.category}</p>
+                <div class="flex items-center gap-1 text-amber-500 text-xs mt-0.5">
+                  <span class="material-symbols-outlined text-xs">star</span>
+                  <span class="font-semibold">${app.rating}</span>
+                  <span class="text-gray-400 text-[11px] ml-1">• ${app.size}</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3 line-clamp-2 leading-relaxed">${app.description}</p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Free • EXE</span>
+            <span class="bg-teal-50 group-hover:bg-teal-600 text-teal-700 group-hover:text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors">
+              <span class="material-symbols-outlined text-sm">open_in_new</span>
+              <span>Install</span>
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Populate and open UI
+    function showAppUI(app) {
+      const detailIcon = document.getElementById('detailIcon');
+      detailIcon.className = `w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-white text-4xl shadow-md bg-gradient-to-tr ${app.color}`;
+      detailIcon.innerHTML = `<span class="material-symbols-outlined text-4xl">${app.icon}</span>`;
+
+      document.getElementById('detailTitle').innerText = app.name;
+      document.getElementById('detailCategory').innerText = app.category;
+      document.getElementById('detailRating').innerText = app.rating;
+      document.getElementById('detailSize').innerText = app.size;
+      document.getElementById('detailDescription').innerText = app.description;
+      document.getElementById('detailInstallBtn').href = app.url;
+
+      // Render Features
+      const featuresContainer = document.getElementById('detailFeatures');
+      featuresContainer.innerHTML = app.features.map(f => `
+        <li class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-teal-600 text-base">check_circle</span>
+          <span>${f}</span>
+        </li>
+      `).join('');
+
+      // Render Mockup Screenshots
+      const screenshotsContainer = document.getElementById('detailScreenshots');
+      screenshotsContainer.innerHTML = [1, 2, 3].map(index => `
+        <div class="w-64 h-36 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl border border-gray-200 flex flex-col items-center justify-center p-4 text-center">
+          <span class="material-symbols-outlined text-3xl text-gray-400 mb-1">${app.icon}</span>
+          <span class="text-xs font-semibold text-gray-600">${app.name} View ${index}</span>
+          <span class="text-[10px] text-gray-400 mt-0.5">Installer Binary Preview</span>
+        </div>
+      `).join('');
+
+      document.getElementById('catalogView').classList.add('hidden');
+      document.getElementById('categoryBar').classList.add('hidden');
+      document.getElementById('navSearchBar').classList.add('opacity-40', 'pointer-events-none');
+      document.getElementById('installPageView').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Router: Navigate to App (Updates URL to https://{URL}/{app-name})
+    function navigateToApp(slug) {
+      const selectedApp = apps.find(a => a.slug === slug);
+      if (!selectedApp) return;
+
+      // Check protocol: If running through a web server (http/https), use clean URL path.
+      // If opened locally via file://, fallback to hash #/{app-name} so browser security permits it.
+      const isHttp = window.location.protocol.startsWith('http');
+      const newUrl = isHttp ? `/${selectedApp.slug}` : `#/${selectedApp.slug}`;
+
+      try {
+        window.history.pushState({ appSlug: selectedApp.slug }, selectedApp.name, newUrl);
+      } catch (e) {
+        window.location.hash = `/${selectedApp.slug}`;
+      }
+
+      showAppUI(selectedApp);
+    }
+
+    // Router: Navigate back to Catalog (Resets URL)
+    function navigateToCatalog() {
+      const isHttp = window.location.protocol.startsWith('http');
+      const rootUrl = isHttp ? '/' : window.location.pathname;
+
+      try {
+        window.history.pushState({ appSlug: null }, "PTG Store", rootUrl);
+      } catch (e) {
+        window.location.hash = '';
+      }
+
+      document.getElementById('installPageView').classList.add('hidden');
+      document.getElementById('categoryBar').classList.remove('hidden');
+      document.getElementById('navSearchBar').classList.remove('opacity-40', 'pointer-events-none');
+      document.getElementById('catalogView').classList.remove('hidden');
+    }
+
+    // Handle Browser Back / Forward buttons
+    window.addEventListener('popstate', (e) => {
+      checkCurrentRoute();
+    });
+
+    // Check URL route on initial page load / refresh
+    function checkCurrentRoute() {
+      let slug = '';
+      if (window.location.protocol.startsWith('http')) {
+        slug = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      }
+      if (!slug && window.location.hash) {
+        slug = window.location.hash.replace(/^#\/?/, '');
+      }
+
+      if (slug) {
+        const found = apps.find(a => a.slug === slug.toLowerCase());
+        if (found) {
+          showAppUI(found);
+          return;
+        }
+      }
+
+      // Default to storefront
+      document.getElementById('installPageView').classList.add('hidden');
+      document.getElementById('categoryBar').classList.remove('hidden');
+      document.getElementById('navSearchBar').classList.remove('opacity-40', 'pointer-events-none');
+      document.getElementById('catalogView').classList.remove('hidden');
+      renderApps();
+    }
+
+    // Category Filter Handler
+    function filterCategory(cat) {
+      navigateToCatalog();
+      currentCategory = cat;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        if (btn.innerText.includes(cat) || (cat === 'All' && btn.innerText.includes('All'))) {
+          btn.className = 'category-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-teal-600 text-white transition-colors';
+        } else {
+          btn.className = 'category-btn px-4 py-1.5 rounded-full text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors';
+        }
+      });
+      renderApps();
+    }
+
+    // Search Handler
+    function handleSearch() {
+      navigateToCatalog();
+      searchQuery = document.getElementById('searchInput').value;
+      renderApps();
+    }
+
+    // Initialize Store
+    renderApps();
+    checkCurrentRoute();
+  </script>
+</body>
+</html>
